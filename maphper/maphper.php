@@ -21,13 +21,13 @@ class Maphper implements \Countable, \ArrayAccess, \Iterator {
 	private $array = [];
 	private $iterator = 0;
 
-	public function __construct(\Maphper\DataSource $dataSource, array $settings = null, array $relations = []) {
+	public function __construct(DataSource $dataSource, array $settings = null, array $relations = []) {
 		$this->dataSource = $dataSource;
 		if ($settings) $this->settings = $settings;
 		if ($relations) $this->relations = $relations;
 	}
 
-	public function addRelation($name, \Maphper\Relation $relation) {
+	public function addRelation($name, Relation $relation) {
 		$this->relations[$name] = $relation;
 	}
 
@@ -100,8 +100,8 @@ class Maphper implements \Countable, \ArrayAccess, \Iterator {
 			
 			foreach ($this->relations as $name => $relation) {
 				if (!isset($object->{$relation->field})) $object->{$relation->field} = null;
-				if ($relation->relationType == \Maphper\Relation::ONE) $object->$name = new \Maphper\Relation\One($relation, $object->{$relation->field});
-				else if ($relation->relationType == \Maphper\Relation::MANY) {	
+				if ($relation->relationType == Relation::ONE) $object->$name = new Relation\One($relation, $object->{$relation->field});
+				else if ($relation->relationType == Relation::MANY) {
 					$object->$name = $relation->mapper->filter([$relation->parentField => $object->{$relation->field}]);
 				}
 			}				
@@ -134,7 +134,7 @@ class Maphper implements \Countable, \ArrayAccess, \Iterator {
 		return $maphper;
 	}	
 	
-	public function findAggregate($function, $field, $group = null, array $criteria = []) {
+	public function findAggregate($function, $field, $group = null) {
 		return $this->dataSource->findAggregate($function, $field, $group, $this->settings['filter']);
 	}
 	

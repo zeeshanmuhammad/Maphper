@@ -3,8 +3,6 @@ namespace Maphper\DataSource;
 class Database implements \Maphper\DataSource {
 	private $db;
 	private $table;
-	private $iterator = 0;
-	private $iteratorResultSet;
 	private $iteratorMaxRecords = 1000;
 	private $cache = [];
 	private $primaryKey;
@@ -127,7 +125,7 @@ class Database implements \Maphper\DataSource {
 		foreach ($fields as $key => $value) {		
 			if (is_numeric($key) && is_array($value)) {
 				$result = $this->buildFindQuery($value, $key);
-				foreach ($result['args'] as $key => $arg) $args[$key] = $arg;
+				foreach ($result['args'] as $arg_key => $arg) $args[$arg_key] = $arg;
 				foreach ($result['sql'] as $arg) $sql[] = $arg;
 				continue;
 			}
@@ -269,10 +267,14 @@ class Database implements \Maphper\DataSource {
 	}
 	
 	private function getType($val) {
+        // May introduce subtle trailing space truncation storage bugs if $val) < 256 during INSERTs and
+        // UPDATEs due to VARCHAR and LONGBLOB type differences?
+
+        // May introduce subtle bugs when LIKE is used as LONGBLOB is case-insensitive and VARCHAR isn't?
+
 		if (is_int($val)) return  'INT(11)';
 		else if (is_double($val)) return 'DECIMAL(9,' . strlen($val) - strrpos($val, '.') - 1 . ')';
-		else if (is_string($val) && strlen($val) < 256) return 'VARCHAR(255)';
-		else if (is_string($val) && strlen($val) > 256) return 'LONGBLOG';
+		else if (is_string($val) && strlen($val) > 256) return 'LONGBLOB';
 		else return 'VARCHAR(255)';
 	}
 	
@@ -289,7 +291,8 @@ class Database implements \Maphper\DataSource {
 				
 				$pkField = implode(', ', $parts) . ', PRIMARY KEY(' . implode(', ', $this->primaryKey) . ')';
 			}
-				
+
+            // What happens if $pkField is undefined when !is_array($this->primaryKey) ?
 			$this->db->query('CREATE TABLE IF NOT EXISTS ' . $this->table . ' (' . $pkField . ')');
 			
 			foreach ($data as $key => $value) {
